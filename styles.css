@@ -1053,18 +1053,32 @@ body {
 @media (max-width: 768px) {
   .desktop-nav { display: none; }
   
-  .app-header { height: 68px; }
+  .app-header { height: 68px; padding: 0 10px; }
   .brand-title { font-size: 0.95rem; }
+  .logo-wrapper { width: 44px; height: 44px; min-width: 44px; }
+  .btn-accent-sm { font-size: 0.75rem; padding: 8px 12px; }
+  
+  .main-content { padding: 15px 0 85px 0; }
+  .welcome-card { padding: 16px; flex-direction: column; align-items: flex-start; gap: 12px; }
   
   .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .dashboard-columns { grid-template-columns: 1fr; }
-  .quick-actions-grid { grid-template-columns: repeat(4, 1fr); }
-  .qa-btn span { font-size: 0.65rem; }
-  .filters-grid { grid-template-columns: 1fr; }
-
+  .kpi-value { font-size: 1.15rem; }
+  
+  .dashboard-columns { grid-template-columns: 1fr; gap: 16px; }
+  .quick-actions-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .qa-btn { padding: 12px 10px; }
+  .qa-btn span { font-size: 0.75rem; }
+  
+  .filters-grid { grid-template-columns: 1fr; gap: 10px; }
+  .grid-responsive { grid-template-columns: 1fr; gap: 12px; }
+  
+  .item-card { padding: 12px; flex-direction: column; align-items: flex-start; }
+  .item-main { width: 100%; align-items: flex-start; }
+  .item-side { align-items: flex-start; width: 100%; text-align: left; flex-direction: row; justify-content: space-between; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px; }
+  
   .bottom-nav {
     display: flex;
-    height: 68px;
+    height: 72px;
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -1076,6 +1090,7 @@ body {
     left: 0;
     width: 100%;
     z-index: 90;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .nav-item {
@@ -1085,14 +1100,18 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    font-size: 0.66rem;
+    gap: 6px;
+    font-size: 0.7rem;
     font-weight: 700;
     cursor: pointer;
     flex: 1;
+    padding: 8px 0;
   }
 
+  .nav-item svg { width: 22px; height: 22px; }
   .nav-item.active { color: var(--brand-yellow); }
+  
+  .modal-content { width: 95%; max-width: none; padding: 20px 16px; }
 }
 
 .info-box {

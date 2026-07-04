@@ -129,7 +129,7 @@ class FitControlApp {
     errorDiv.classList.add('hidden');
 
     // Secure fallback authentication (Remove before public release if solely relying on Firebase)
-    const secureFallbackPassword = 'Admin@FamilyGym2026!';
+    const secureFallbackPassword = 'Gym2026';
     if (email === 'admin@thefamilygym.com' && password === secureFallbackPassword) {
       sessionStorage.setItem(this.authSessionKey, 'true');
       document.getElementById('login-overlay').classList.add('hidden');
@@ -150,7 +150,7 @@ class FitControlApp {
           errorDiv.classList.remove('hidden');
         });
     } else {
-      errorDiv.textContent = 'Contraseña incorrecta (Usa: gym2026)';
+      errorDiv.textContent = 'Contraseña o usuario incorrecto';
       errorDiv.classList.remove('hidden');
     }
   }

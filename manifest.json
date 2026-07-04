@@ -1,6 +1,6 @@
 {
-  "name": "FitControl - Finanzas Gimnasio",
-  "short_name": "FitControl",
+  "name": "The Family Gym - PWA",
+  "short_name": "Family Gym",
   "description": "Aplicación sencilla para gestionar cuotas de alumnos, deudas, préstamos e intereses del gimnasio.",
   "start_url": "index.html",
   "display": "standalone",
