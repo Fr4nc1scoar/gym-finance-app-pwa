@@ -90,6 +90,18 @@ body {
   padding: 3px;
   background: linear-gradient(135deg, var(--brand-yellow), #eab308);
   box-shadow: 0 0 20px var(--brand-yellow-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-logo .logo-wrapper {
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
 }
 
 .login-logo img {
@@ -607,7 +619,14 @@ body {
 }
 
 .filter-group select {
-  background: var(--bg-primary);
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23facc15' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 30px;
+  background-color: var(--bg-surface-elevated);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 8px 12px;
@@ -615,6 +634,11 @@ body {
   font-family: var(--font-family);
   font-size: 0.82rem;
   outline: none;
+}
+
+select option {
+  background-color: var(--bg-surface-elevated);
+  color: var(--text-main);
 }
 
 .filter-group select:focus { border-color: var(--brand-yellow); }
@@ -679,6 +703,8 @@ body {
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-main);
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 .item-sub {
@@ -686,7 +712,10 @@ body {
   color: var(--text-muted);
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 .progress-container {
@@ -875,14 +904,23 @@ body {
 }
 
 .form-group input, .form-group select {
-  background: var(--bg-primary);
+  width: 100%;
+  background: var(--bg-surface-elevated);
   border: 1px solid var(--border-color);
+  padding: 10px;
   border-radius: var(--radius-sm);
-  padding: 11px 14px;
   color: var(--text-main);
   font-family: var(--font-family);
-  font-size: 0.88rem;
-  outline: none;
+}
+
+.form-group select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23facc15' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 30px;
 }
 
 .form-group input:focus, .form-group select:focus {
@@ -1074,7 +1112,7 @@ body {
   
   .item-card { padding: 12px; flex-direction: column; align-items: flex-start; }
   .item-main { width: 100%; align-items: flex-start; }
-  .item-side { align-items: flex-start; width: 100%; text-align: left; flex-direction: row; justify-content: space-between; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px; }
+  .item-side { align-items: center; width: 100%; text-align: left; flex-direction: row; justify-content: space-between; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px; }
   
   .bottom-nav {
     display: flex;
@@ -1112,6 +1150,15 @@ body {
   .nav-item.active { color: var(--brand-yellow); }
   
   .modal-content { width: 95%; max-width: none; padding: 20px 16px; }
+  
+  .form-row { grid-template-columns: 1fr; }
+  .loan-metrics { grid-template-columns: 1fr 1fr; }
+  .cash-row-btn { grid-template-columns: 1fr; gap: 8px; }
+  
+  .login-card { padding: 24px 16px; width: 90%; margin: 0 auto; }
+  .login-card h2 { font-size: 1.15rem; }
+  .login-sub { font-size: 0.65rem; margin-bottom: 15px; }
+  .login-logo { width: 75px; height: 75px; margin-bottom: 12px; }
 }
 
 .info-box {

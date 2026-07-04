@@ -950,6 +950,10 @@ class FitControlApp {
             <div class="text-success">Liquidado: <strong>$${Number(loan.totalPaid).toFixed(2)}</strong></div>
             <div class="text-warning">Interés: <strong>$${monthlyInterest}/mes</strong></div>
           </div>
+          <div style="display:flex; justify-content: space-around; font-size: 0.76rem; text-align:center; background: rgba(0,0,0,0.25); padding: 8px; border-radius: 8px; margin-bottom: 10px;">
+            <div class="text-warning" style="color: #facc15;">Int. Acum: <strong>$${(Number(loan.accumulatedInterest) || 0).toFixed(2)}</strong></div>
+            <div class="text-success">Int. Pagado: <strong>$${(Number(loan.interestPaidSoFar) || 0).toFixed(2)}</strong></div>
+          </div>
 
           <div>
             <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted);">
@@ -977,6 +981,8 @@ class FitControlApp {
     const paidSoFar = parseFloat(document.getElementById('loan-paid-so-far').value) || 0;
     const rate = parseFloat(document.getElementById('loan-interest-rate').value) || 0;
     const payDay = parseInt(document.getElementById('loan-pay-day').value) || 15;
+    const accumulatedInterest = parseFloat(document.getElementById('loan-accumulated-interest').value) || 0;
+    const interestPaidSoFar = parseFloat(document.getElementById('loan-interest-paid-so-far').value) || 0;
 
     const balance = Math.max(0, principal - paidSoFar);
 
@@ -987,7 +993,9 @@ class FitControlApp {
       totalPaid: paidSoFar,
       currentBalance: balance,
       interestRate: rate,
-      payDay
+      payDay,
+      accumulatedInterest: accumulatedInterest,
+      interestPaidSoFar: interestPaidSoFar
     };
 
     this.data.loans.push(newLoan);
@@ -1016,6 +1024,7 @@ class FitControlApp {
     const loanId = document.getElementById('pay-loan-id').value;
     const principalPaid = parseFloat(document.getElementById('pay-loan-principal').value) || 0;
     const interestPaid = parseFloat(document.getElementById('pay-loan-interest').value) || 0;
+    const accumulateInterest = parseFloat(document.getElementById('pay-loan-accumulate-interest').value) || 0;
 
     const loan = this.data.loans.find(l => l.id === loanId);
     if (!loan) return;
@@ -1023,6 +1032,17 @@ class FitControlApp {
     if (principalPaid > 0) {
       loan.totalPaid = (Number(loan.totalPaid) || 0) + principalPaid;
       loan.currentBalance = Math.max(0, loan.originalPrincipal - loan.totalPaid);
+    }
+
+    if (interestPaid > 0) {
+      loan.interestPaidSoFar = (Number(loan.interestPaidSoFar) || 0) + interestPaid;
+      // If we are paying interest, maybe it reduces accumulated interest?
+      // Wait, if they pay interest, does it reduce accumulated? The user said "y registrar si tengo intereses acumulados que no he pagado". Let's assume paying interest doesn't automatically deduct from accumulated unless specified, or we can just deduct it if accumulated > 0.
+      // But let's just track it as paid. The user specifies "Sumar a Intereses Acumulados" separately.
+    }
+
+    if (accumulateInterest > 0) {
+      loan.accumulatedInterest = (Number(loan.accumulatedInterest) || 0) + accumulateInterest;
     }
 
     const totalPaidThisTime = principalPaid + interestPaid;
