@@ -26,13 +26,106 @@ class FitControlApp {
   }
 
   init() {
+    this.registerServiceWorker();
     this.loadData();
     this.checkAuthStatus();
     this.setupEventListeners();
     this.setCurrentDate();
     this.applyTheme();
+    this.checkAndRenewCycles();
     this.render();
     this.startNotificationScheduler();
+  }
+
+  registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        console.log('SW registrado con éxito:', reg.scope);
+      }).catch(err => {
+        console.error('Error al registrar SW:', err);
+      });
+    }
+  }
+
+  advanceClientDueDate(dateStr, plan = '') {
+    if (!dateStr) return new Date().toISOString().split('T')[0];
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    let year = parseInt(parts[0], 10);
+    let month = parseInt(parts[1], 10) - 1;
+    let day = parseInt(parts[2], 10);
+
+    const planLower = (plan || '').toLowerCase();
+    if (planLower.includes('semanal') && !planLower.includes('quincenal')) {
+      const dObj = new Date(year, month, day + 7);
+      return dObj.toISOString().split('T')[0];
+    } else if (planLower.includes('quincenal')) {
+      const dObj = new Date(year, month, day + 15);
+      return dObj.toISOString().split('T')[0];
+    } else {
+      month += 1;
+      if (month > 11) {
+        month = 0;
+        year += 1;
+      }
+      const lastDayOfNextMonth = new Date(year, month + 1, 0).getDate();
+      const actualDay = Math.min(day, lastDayOfNextMonth);
+      const mStr = String(month + 1).padStart(2, '0');
+      const dStr = String(actualDay).padStart(2, '0');
+      return `${year}-${mStr}-${dStr}`;
+    }
+  }
+
+  formatDateSpanish(dateStr) {
+    if (!dateStr) return 'No definida';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const dObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    return dObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+  }
+
+  checkAndRenewCycles() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    let changed = false;
+
+    if (this.data.clients && this.data.clients.length > 0) {
+      this.data.clients.forEach(client => {
+        if (client.status === 'paid' && client.amountOwed === 0 && client.startDate) {
+          if (todayStr >= client.startDate) {
+            client.amountOwed = Number(client.fee) || 25;
+            client.status = 'overdue';
+            changed = true;
+          }
+        }
+      });
+    }
+
+    if (this.data.loans && this.data.loans.length > 0) {
+      this.data.loans.forEach(loan => {
+        if (!loan.nextPayDate) {
+          const now = new Date();
+          let yr = now.getFullYear();
+          let mo = now.getMonth();
+          const pDay = loan.payDay || 15;
+          const maxD = new Date(yr, mo + 1, 0).getDate();
+          const d = Math.min(pDay, maxD);
+          const candidate = `${yr}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          loan.nextPayDate = candidate < todayStr ? this.advanceClientDueDate(candidate, 'Mensual') : candidate;
+          changed = true;
+        } else if (todayStr >= loan.nextPayDate && loan.currentBalance > 0) {
+          const monthlyInt = (loan.currentBalance * ((loan.interestRate || 0) / 100));
+          if (monthlyInt > 0) {
+            loan.accumulatedInterest = (Number(loan.accumulatedInterest) || 0) + monthlyInt;
+          }
+          loan.nextPayDate = this.advanceClientDueDate(loan.nextPayDate, 'Mensual');
+          changed = true;
+        }
+      });
+    }
+
+    if (changed) {
+      localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+    }
   }
 
   applyTheme() {
@@ -116,18 +209,29 @@ class FitControlApp {
   }
 
   sendPhoneNotification(title, body, tag = 'gym-notif') {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate([200, 100, 200, 100, 200]); } catch (e) {}
+    }
+
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
-        registration.showNotification(title, {
-          body: body,
-          icon: './assets/icon-192.png',
-          badge: './assets/icon-192.png',
-          tag: tag,
-          vibrate: [200, 100, 200, 100, 200],
-          requireInteraction: true
-        });
+      navigator.serviceWorker.getRegistration().then(registration => {
+        if (registration && registration.showNotification) {
+          registration.showNotification(title, {
+            body: body,
+            icon: './assets/icon-192.png',
+            badge: './assets/icon-192.png',
+            tag: tag,
+            vibrate: [200, 100, 200, 100, 200],
+            requireInteraction: true
+          }).catch(() => {
+            try { new Notification(title, { body, tag }); } catch (e) {}
+          });
+        } else {
+          try { new Notification(title, { body, tag }); } catch (e) {}
+        }
       }).catch(() => {
         try { new Notification(title, { body, tag }); } catch (e) {}
       });
@@ -138,7 +242,8 @@ class FitControlApp {
 
   testPhoneNotification() {
     if (!('Notification' in window)) {
-      this.showToast('⚠️ Tu navegador no soporta notificaciones.');
+      alert('⚠️ Tu navegador o teléfono no soporta la función nativa de notificaciones.');
+      this.showToast('⚠️ No compatible con notificaciones.');
       return;
     }
     if (Notification.permission === 'granted') {
@@ -148,6 +253,9 @@ class FitControlApp {
         'test-alarm'
       );
       this.showToast('🔔 Alarma de prueba enviada al teléfono.');
+    } else if (Notification.permission === 'denied') {
+      alert('⚠️ Permiso BLOQUEADO en tu teléfono: Para recibir alarmas, debes tocar el icono del candado 🔒 o los 3 puntos (Ajustes) en la barra de dirección de tu navegador -> Permisos de la página -> Notificaciones -> Permitir.');
+      this.showToast('⚠️ Permiso bloqueado.');
     } else {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
@@ -158,7 +266,8 @@ class FitControlApp {
           );
           this.showToast('✅ Permisos activados y alarma enviada.');
         } else {
-          this.showToast('⚠️ Permiso denegado por el navegador o teléfono.');
+          alert('⚠️ Permiso denegado. Para recibir alarmas automáticas en tu celular, debes seleccionar "Permitir" cuando se te solicite.');
+          this.showToast('⚠️ Permiso denegado.');
         }
       });
     }
@@ -303,6 +412,7 @@ class FitControlApp {
     } else {
       this.loadEmptyData();
     }
+    this.checkAndRenewCycles();
   }
 
   saveData() {
@@ -826,17 +936,12 @@ class FitControlApp {
   }
 
   createClientCardHtml(client) {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-
-    const dueDateObj = this.getAdjustedDueDate(client.startDate, currentYear, currentMonth);
-    const dueDateFormatted = dueDateObj ? dueDateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : 'Día ' + client.startDate;
+    const dueDateFormatted = this.formatDateSpanish(client.startDate);
 
     const isOverdue = client.amountOwed > 0 || client.status === 'overdue';
     const statusBadge = isOverdue
-      ? `<span class="badge badge-overdue">Debe $${Number(client.amountOwed).toFixed(2)}</span>`
-      : `<span class="badge badge-paid">Al día (Vence: ${dueDateFormatted})</span>`;
+      ? `<span class="badge badge-overdue">Debe $${Number(client.amountOwed).toFixed(2)} (Venció: ${dueDateFormatted})</span>`
+      : `<span class="badge badge-paid">Al día (Próximo pago: ${dueDateFormatted})</span>`;
 
     const trainerBadge = client.hasCustomTrainer
       ? `<span class="badge badge-custom">🏋️ Personalizado</span>`
@@ -996,7 +1101,10 @@ class FitControlApp {
     const client = this.data.clients.find(c => c.id === clientId);
     if (client) {
       client.amountOwed = Math.max(0, client.amountOwed - amount);
-      if (client.amountOwed === 0) client.status = 'paid';
+      if (client.amountOwed === 0) {
+        client.status = 'paid';
+        client.startDate = this.advanceClientDueDate(client.startDate, client.plan);
+      }
 
       this.data.cashflow.push({
         id: 'm_' + Date.now(),
@@ -1150,9 +1258,12 @@ class FitControlApp {
 
     if (interestPaid > 0) {
       loan.interestPaidSoFar = (Number(loan.interestPaidSoFar) || 0) + interestPaid;
-      // If we are paying interest, maybe it reduces accumulated interest?
-      // Wait, if they pay interest, does it reduce accumulated? The user said "y registrar si tengo intereses acumulados que no he pagado". Let's assume paying interest doesn't automatically deduct from accumulated unless specified, or we can just deduct it if accumulated > 0.
-      // But let's just track it as paid. The user specifies "Sumar a Intereses Acumulados" separately.
+      if ((Number(loan.accumulatedInterest) || 0) > 0) {
+        loan.accumulatedInterest = Math.max(0, loan.accumulatedInterest - interestPaid);
+      }
+      if (loan.nextPayDate) {
+        loan.nextPayDate = this.advanceClientDueDate(loan.nextPayDate, 'Mensual');
+      }
     }
 
     if (accumulateInterest > 0) {
