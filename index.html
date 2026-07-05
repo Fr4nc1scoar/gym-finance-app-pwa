@@ -44,10 +44,6 @@
     <!-- HEADER CON LOGO OFICIAL BASE64 INLINE -->
     <header class="app-header">
       <div class="brand">
-        <!-- BOTÓN DE ATRÁS -->
-        <button id="global-back-btn" class="icon-btn hidden" onclick="app.switchTab('dashboard')" style="margin-right: 10px;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
         <div class="logo-wrapper">
           <img src="assets/logo.png" alt="The Family Gym Logo" class="brand-logo-img">
         </div>
@@ -65,9 +61,6 @@
         <button id="toggle-theme-btn" class="icon-btn" title="Cambiar a Tema Claro / Oscuro" onclick="app.toggleTheme()">
           <svg id="theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
           <svg id="theme-icon-moon" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-        </button>
-        <button id="quick-add-btn" class="btn-accent-sm" onclick="app.openModal('modal-add-client')">
-          <span>+ Inscribir</span>
         </button>
       </div>
     </header>
@@ -196,9 +189,14 @@
       <!-- VISTA 2: MIEMBROS Y MENSUALIDADES -->
       <section id="view-clients" class="view-section">
         <div class="section-header-sticky">
-          <div class="search-bar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="client-search-input" placeholder="Buscar miembro por nombre, teléfono o nota..." oninput="app.filterClients()">
+          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+            <div class="search-bar" style="flex: 1; margin-bottom: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="client-search-input" placeholder="Buscar miembro..." oninput="app.filterClients()">
+            </div>
+            <button class="btn-primary" onclick="app.openModal('modal-add-client')" style="padding: 10px 16px; white-space: nowrap; font-size: 0.85rem; height: 100%; border-radius: var(--radius-sm); font-weight: 800;">
+              <span>+ Inscribir Miembro</span>
+            </button>
           </div>
           
           <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; margin-bottom: 4px;">
@@ -345,14 +343,33 @@
         </div>
 
         <div class="settings-card">
-          <h3>📦 Copias de Seguridad</h3>
+          <h3>🔔 Configuración de Alarmas en el Teléfono</h3>
+          <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 12px;">El sistema te notificará automáticamente en tu teléfono a la hora seleccionada si tienes cobros o alertas pendientes.</p>
+          
+          <div class="form-row" style="margin-bottom: 10px;">
+            <div class="form-group">
+              <label>Hora de Recordatorio Automático</label>
+              <input type="time" id="setting-notif-time" value="09:00" onchange="app.saveSettings()">
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+              <button type="button" class="btn-success-sm" onclick="app.testPhoneNotification()" style="padding: 12px; font-size: 0.85rem; width: 100%;">
+                <span>🔔 Probar Alarma Ahora</span>
+              </button>
+            </div>
+          </div>
+          <small class="text-dim" style="font-size: 0.72rem; display: block; line-height: 1.4;">Nota: Para recibir alarmas, debes otorgar permisos tocando el icono de campana superior. Tu teléfono ejecutará la notificación cuando la app esté abierta o en segundo plano en tu navegador.</small>
+        </div>
+
+        <div class="settings-card">
+          <h3>📦 Copias de Seguridad y Datos</h3>
           <div class="backup-buttons">
             <button class="btn-secondary" onclick="app.exportData()">⬇️ Descargar Respaldo JSON</button>
             <label class="btn-warning-outline file-label">
               ⬆️ Restaurar Respaldo
               <input type="file" id="import-file-input" accept=".json" onchange="app.importData(event)" style="display:none;">
             </label>
-            <button class="btn-danger-text" onclick="app.resetAllData()">🗑️ Borrar Todos los Datos</button>
+            <button class="btn-secondary" onclick="app.loadDemoData(); app.showToast('🌱 Datos de demostración cargados');">🌱 Cargar Datos de Prueba (Demo)</button>
+            <button class="btn-danger-text" onclick="app.resetAllData()">🗑️ Dejar App en Blanco (De Cero)</button>
           </div>
         </div>
 

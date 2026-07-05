@@ -115,6 +115,55 @@ class FitControlApp {
     setInterval(() => this.checkAndSendNotifications(false), 30000);
   }
 
+  sendPhoneNotification(title, body, tag = 'gym-notif') {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.showNotification(title, {
+          body: body,
+          icon: './assets/icon-192.png',
+          badge: './assets/icon-192.png',
+          tag: tag,
+          vibrate: [200, 100, 200, 100, 200],
+          requireInteraction: true
+        });
+      }).catch(() => {
+        try { new Notification(title, { body, tag }); } catch (e) {}
+      });
+    } else {
+      try { new Notification(title, { body, tag }); } catch (e) {}
+    }
+  }
+
+  testPhoneNotification() {
+    if (!('Notification' in window)) {
+      this.showToast('⚠️ Tu navegador no soporta notificaciones.');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      this.sendPhoneNotification(
+        '🏋️ ¡Alarma Confirmada! The Family Gym',
+        '¡Excelente! Las alarmas y recordatorios llegarán a tu teléfono correctamente a la hora programada.',
+        'test-alarm'
+      );
+      this.showToast('🔔 Alarma de prueba enviada al teléfono.');
+    } else {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          this.sendPhoneNotification(
+            '🏋️ ¡Alarma Confirmada! The Family Gym',
+            '¡Excelente! Las alarmas y recordatorios llegarán a tu teléfono correctamente a la hora programada.',
+            'test-alarm'
+          );
+          this.showToast('✅ Permisos activados y alarma enviada.');
+        } else {
+          this.showToast('⚠️ Permiso denegado por el navegador o teléfono.');
+        }
+      });
+    }
+  }
+
   checkAndSendNotifications(forceToast = false) {
     const today = new Date();
     const currentDay = today.getDate();
@@ -137,18 +186,35 @@ class FitControlApp {
     }
 
     if ('Notification' in window && Notification.permission === 'granted') {
+      const targetTime = (this.data.settings && this.data.settings.notifTime) ? this.data.settings.notifTime : '09:00';
+      const [targetHour, targetMinute] = targetTime.split(':').map(Number);
+      const nowHour = today.getHours();
+      const nowMinute = today.getMinutes();
+      const todayStr = today.toISOString().split('T')[0];
+
+      if (!forceToast) {
+        if (nowHour !== targetHour || nowMinute !== targetMinute || (this.data.settings && this.data.settings.lastNotifDate === todayStr)) {
+          return;
+        }
+        if (!this.data.settings) this.data.settings = {};
+        this.data.settings.lastNotifDate = todayStr;
+        this.saveData();
+      }
+
       if (pendingClients.length > 0) {
-        new Notification('🏋️ THE FAMILY GYM: Miembros Vencidos', {
-          body: `Atención: Hay ${pendingClients.length} miembro(s) con mensualidad pendiente por cobrar.`,
-          tag: 'gym-overdue-clients'
-        });
+        this.sendPhoneNotification(
+          '🏋️ THE FAMILY GYM: Miembros Vencidos',
+          `Atención: Hay ${pendingClients.length} miembro(s) con mensualidad pendiente por cobrar.`,
+          'gym-overdue-clients'
+        );
       }
 
       if (todayAlerts.length > 0) {
-        new Notification('🔔 THE FAMILY GYM: Alerta Programada', {
-          body: `Tienes ${todayAlerts.length} recordatorio(s) para hoy (Día ${currentDay} del mes).`,
-          tag: 'gym-today-alerts'
-        });
+        this.sendPhoneNotification(
+          '🔔 THE FAMILY GYM: Alerta Programada',
+          `Tienes ${todayAlerts.length} recordatorio(s) para hoy (Día ${currentDay} del mes).`,
+          'gym-today-alerts'
+        );
       }
     }
   }
@@ -207,18 +273,35 @@ class FitControlApp {
     this.showToast('🔒 Sesión cerrada.');
   }
 
+  loadEmptyData() {
+    this.data = {
+      settings: {
+        gymName: 'The Family Gym',
+        slogan: 'Haz la diferencia',
+        defaultFee: 25,
+        notifTime: '09:00'
+      },
+      clients: [],
+      loans: [],
+      customAlerts: [],
+      cashflow: []
+    };
+  }
+
   loadData() {
     const saved = localStorage.getItem(this.storageKey);
     if (saved) {
       try {
         this.data = JSON.parse(saved);
         if (!this.data.customAlerts) this.data.customAlerts = [];
+        if (!this.data.settings) this.data.settings = {};
+        if (!this.data.settings.notifTime) this.data.settings.notifTime = '09:00';
       } catch (e) {
         console.error('Error al cargar datos:', e);
-        this.loadDemoData();
+        this.loadEmptyData();
       }
     } else {
-      this.loadDemoData();
+      this.loadEmptyData();
     }
   }
 
@@ -584,6 +667,10 @@ class FitControlApp {
     } else {
       alertBanner.classList.add('hidden');
     }
+
+    if (document.getElementById('setting-gym-name')) document.getElementById('setting-gym-name').value = this.data.settings?.gymName || 'The Family Gym';
+    if (document.getElementById('setting-gym-slogan')) document.getElementById('setting-gym-slogan').value = this.data.settings?.slogan || 'Haz la diferencia';
+    if (document.getElementById('setting-notif-time')) document.getElementById('setting-notif-time').value = this.data.settings?.notifTime || '09:00';
 
     if (this.activeTab === 'dashboard') {
       this.renderDashboardLists();
@@ -1196,9 +1283,12 @@ class FitControlApp {
   saveSettings() {
     const name = document.getElementById('setting-gym-name').value.trim();
     const slogan = document.getElementById('setting-gym-slogan').value.trim();
+    const notifTime = document.getElementById('setting-notif-time')?.value || '09:00';
 
+    if (!this.data.settings) this.data.settings = {};
     this.data.settings.gymName = name || 'The Family Gym';
     this.data.settings.slogan = slogan || 'Haz la diferencia';
+    this.data.settings.notifTime = notifTime;
 
     this.saveData();
     this.showToast('⚙️ Ajustes guardados.');
@@ -1238,11 +1328,11 @@ class FitControlApp {
   }
 
   resetAllData() {
-    if (confirm('⚠️ ¿Estás segura de borrar TODOS los datos de The Family Gym?')) {
+    if (confirm('⚠️ ¿Estás segura de borrar TODOS los datos y dejar la aplicación en blanco para comenzar de cero?')) {
       localStorage.removeItem(this.storageKey);
-      this.data = { settings: { gymName: 'The Family Gym', slogan: 'Haz la diferencia', defaultFee: 25 }, clients: [], loans: [], customAlerts: [], cashflow: [] };
+      this.loadEmptyData();
       this.saveData();
-      this.showToast('🗑️ Datos borrados.');
+      this.showToast('🗑️ Aplicación en blanco lista para usar.');
     }
   }
 

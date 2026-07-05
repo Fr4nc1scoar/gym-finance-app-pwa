@@ -228,24 +228,27 @@ body {
 }
 
 .logo-wrapper {
-  width: 52px;
-  height: 52px;
-  min-width: 52px;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
   border-radius: 50%;
-  padding: 2px;
-  background: linear-gradient(135deg, var(--brand-yellow), #eab308);
+  padding: 0;
+  border: 2px solid var(--brand-yellow);
+  background: #000;
   box-shadow: 0 0 14px var(--brand-yellow-glow);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .brand-logo-img {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
   background-color: #000;
+  transform: scale(0.94);
 }
 
 .brand-text-container {
@@ -261,6 +264,7 @@ body {
   letter-spacing: 0.3px;
   line-height: 1.1;
   margin: 0;
+  white-space: nowrap;
 }
 
 .brand-subtitle {
@@ -271,6 +275,7 @@ body {
   text-transform: uppercase;
   margin-top: 2px;
   display: block;
+  white-space: nowrap;
 }
 
 /* NAVEGACIÓN DESKTOP */
@@ -1173,8 +1178,10 @@ select option {
 @media (max-width: 768px) {
   .desktop-nav { display: none; }
   
-  .app-header { height: 68px; padding: 0 10px; }
-  .brand-title { font-size: 0.95rem; }
+  .app-header { height: 72px; padding: 0 12px; }
+  .brand { gap: 10px; }
+  .brand-title { font-size: 1.05rem; }
+  .brand-subtitle { font-size: 0.6rem; }
   .logo-wrapper { width: 44px; height: 44px; min-width: 44px; }
   .btn-accent-sm { font-size: 0.75rem; padding: 8px 12px; }
   
