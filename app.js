@@ -1100,10 +1100,23 @@ class FitControlApp {
 
     const client = this.data.clients.find(c => c.id === clientId);
     if (client) {
-      client.amountOwed = Math.max(0, client.amountOwed - amount);
-      if (client.amountOwed === 0) {
-        client.status = 'paid';
-        client.startDate = this.advanceClientDueDate(client.startDate, client.plan);
+      if (client.amountOwed > 0) {
+        client.amountOwed = Math.max(0, client.amountOwed - amount);
+        if (client.amountOwed === 0) {
+          client.status = 'paid';
+          client.startDate = this.advanceClientDueDate(client.startDate, client.plan);
+        } else {
+          client.status = 'overdue';
+        }
+      } else {
+        if (amount >= client.fee) {
+          client.amountOwed = 0;
+          client.status = 'paid';
+          client.startDate = this.advanceClientDueDate(client.startDate, client.plan);
+        } else {
+          client.amountOwed = Math.max(0, client.fee - amount);
+          client.status = 'overdue';
+        }
       }
 
       this.data.cashflow.push({
@@ -1260,9 +1273,6 @@ class FitControlApp {
       loan.interestPaidSoFar = (Number(loan.interestPaidSoFar) || 0) + interestPaid;
       if ((Number(loan.accumulatedInterest) || 0) > 0) {
         loan.accumulatedInterest = Math.max(0, loan.accumulatedInterest - interestPaid);
-      }
-      if (loan.nextPayDate) {
-        loan.nextPayDate = this.advanceClientDueDate(loan.nextPayDate, 'Mensual');
       }
     }
 
