@@ -38,6 +38,55 @@
   --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
+/* MODO CLARO - FONDO BLANCO Y ALTO CONTRASTE */
+body.light-theme {
+  --bg-primary: #ffffff;
+  --bg-surface: #f8fafc;
+  --bg-surface-elevated: #f1f5f9;
+  --bg-glass: rgba(255, 255, 255, 0.92);
+  
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
+  
+  --brand-yellow: #d97706;
+  --brand-yellow-gold: #b45309;
+  --brand-yellow-glow: rgba(217, 119, 6, 0.15);
+
+  --accent-green: #059669;
+  --accent-green-glow: rgba(5, 150, 105, 0.15);
+  
+  --accent-red: #dc2626;
+  --accent-red-glow: rgba(220, 38, 38, 0.15);
+  
+  --accent-blue: #2563eb;
+  --accent-purple: #7c3aed;
+
+  --border-color: #cbd5e1;
+  --border-highlight: #94a3b8;
+
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.12);
+}
+
+body.light-theme .welcome-card,
+body.light-theme .loan-summary-card {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-color: var(--border-highlight);
+  box-shadow: var(--shadow-sm);
+}
+
+body.light-theme .login-overlay {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+}
+
+body.light-theme .login-card {
+  background: #ffffff;
+  border-color: var(--brand-yellow);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -642,6 +691,39 @@ select option {
 }
 
 .filter-group select:focus { border-color: var(--brand-yellow); }
+
+/* FILTER PILLS CLEAN UI */
+.filter-pills {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pill:hover {
+  border-color: var(--brand-yellow);
+  color: var(--text-main);
+}
+
+.pill.active {
+  background: var(--brand-yellow);
+  color: #0a0e21;
+  border-color: var(--brand-yellow);
+  font-weight: 800;
+}
 
 /* GRID DE TARJETAS RESPONSIVA */
 .grid-responsive {

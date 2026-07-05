@@ -21,6 +21,7 @@ class FitControlApp {
     };
 
     this.activeTab = 'dashboard';
+    this.clientStatusFilter = 'all';
     this.init();
   }
 
@@ -29,8 +30,50 @@ class FitControlApp {
     this.checkAuthStatus();
     this.setupEventListeners();
     this.setCurrentDate();
+    this.applyTheme();
     this.render();
     this.startNotificationScheduler();
+  }
+
+  applyTheme() {
+    const theme = (this.data.settings && this.data.settings.theme) || 'dark';
+    const isLight = theme === 'light';
+    document.body.classList.toggle('light-theme', isLight);
+
+    const sunIcon = document.getElementById('theme-icon-sun');
+    const moonIcon = document.getElementById('theme-icon-moon');
+    if (sunIcon && moonIcon) {
+      if (isLight) {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      } else {
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      }
+    }
+  }
+
+  toggleTheme() {
+    if (!this.data.settings) this.data.settings = {};
+    const currentTheme = this.data.settings.theme || 'dark';
+    this.data.settings.theme = currentTheme === 'dark' ? 'light' : 'dark';
+    this.saveData();
+    this.applyTheme();
+    this.showToast(this.data.settings.theme === 'light' ? '☀️ Modo Claro Activado' : '🌙 Modo Oscuro Activado');
+  }
+
+  getClientStatus(client) {
+    if (!client) return 'paid';
+    return (client.amountOwed > 0 || client.status === 'overdue') ? 'overdue' : 'paid';
+  }
+
+  checkCustomPlan(planVal) {
+    const customSelect = document.getElementById('client-has-custom');
+    if (customSelect) {
+      if ((planVal || '').toLowerCase().includes('entrenador')) {
+        customSelect.value = 'true';
+      }
+    }
   }
 
   updatePayDayFromStartDate(dateStr) {
@@ -555,19 +598,6 @@ class FitControlApp {
 
   renderDashboardLists() {
     this.renderCustomAlertsList();
-
-    const pendingClientsContainer = document.getElementById('pending-clients-list');
-    const pendingClients = this.data.clients.filter(c => c.amountOwed > 0 || c.status === 'overdue');
-
-    if (pendingClients.length === 0) {
-      pendingClientsContainer.innerHTML = `
-        <div class="empty-state">
-          <span>✅</span>
-          <p>¡Excelente! Todos los miembros están al día con sus cuotas.</p>
-        </div>`;
-    } else {
-      pendingClientsContainer.innerHTML = pendingClients.map(c => this.createClientCardHtml(c)).join('');
-    }
   }
 
   renderCustomAlertsList() {
@@ -644,10 +674,7 @@ class FitControlApp {
       document.querySelectorAll('.filter-pills .pill').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
     }
-    const statusSelect = document.getElementById('filter-status-select');
-    if (statusSelect) {
-      statusSelect.value = status;
-    }
+    this.clientStatusFilter = status;
     this.filterClients();
   }
 
@@ -656,7 +683,7 @@ class FitControlApp {
    */
   filterClients() {
     const query = (document.getElementById('client-search-input')?.value || '').toLowerCase();
-    const statusFilter = document.getElementById('filter-status-select')?.value || 'all';
+    const statusFilter = this.clientStatusFilter || 'all';
     const trainerFilter = document.getElementById('filter-trainer-select')?.value || 'all';
     const paydayFilter = document.getElementById('filter-payday-select')?.value || 'all';
 

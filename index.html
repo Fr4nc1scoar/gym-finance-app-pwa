@@ -62,8 +62,9 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
           <span id="notif-badge-count" style="display: none; position: absolute; top: -4px; right: -4px; background: #e74c3c; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; font-weight: bold; line-height: 16px; text-align: center;">0</span>
         </button>
-        <button id="toggle-view-btn" class="icon-btn" title="Pantalla Completa / Vista Móvil">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="2" width="14" height="20" rx="3" ry="3"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+        <button id="toggle-theme-btn" class="icon-btn" title="Cambiar a Tema Claro / Oscuro" onclick="app.toggleTheme()">
+          <svg id="theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <svg id="theme-icon-moon" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
         </button>
         <button id="quick-add-btn" class="btn-accent-sm" onclick="app.openModal('modal-add-client')">
           <span>+ Inscribir</span>
@@ -190,24 +191,6 @@
           <div id="custom-alerts-list" class="list-container"></div>
         </div>
 
-        <!-- RESUMEN DE COBROS A MIEMBROS PENDIENTES -->
-        <div class="section-block">
-          <div class="block-header">
-            <h3 class="section-title">⏰ Cobros Pendientes de Miembros</h3>
-            <button type="button" class="link-btn" onclick="app.switchTab('clients')">Ver Todos</button>
-          </div>
-          <div id="pending-clients-list" class="list-container"></div>
-        </div>
-
-        <!-- RESUMEN DE DEUDAS Y PRÉSTAMOS DEL GIMNASIO -->
-        <div class="section-block">
-          <div class="block-header">
-            <h3 class="section-title">🏦 Deudas y Préstamos por Pagar</h3>
-            <button type="button" class="link-btn" onclick="app.switchTab('loans')">Gestionar Deudas</button>
-          </div>
-          <div id="dashboard-loans-list" class="list-container"></div>
-        </div>
-
       </section>
 
       <!-- VISTA 2: MIEMBROS Y MENSUALIDADES -->
@@ -218,15 +201,7 @@
             <input type="text" id="client-search-input" placeholder="Buscar miembro por nombre, teléfono o nota..." oninput="app.filterClients()">
           </div>
           
-          <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 10px; margin-bottom: 12px;">
-            <div class="filter-group">
-              <select id="filter-status-select" onchange="app.filterClients()">
-                <option value="all">📊 Estado: Todos</option>
-                <option value="overdue">⚠️ Pendientes / Vencidos</option>
-                <option value="paid">✅ Al Día</option>
-              </select>
-            </div>
-
+          <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; margin-bottom: 4px;">
             <div class="filter-group">
               <select id="filter-trainer-select" onchange="app.filterClients()">
                 <option value="all">🏋️ Plan: Todos</option>
@@ -250,12 +225,6 @@
             <button class="pill" onclick="app.setClientFilter('overdue', this)">⚠️ Vencidos</button>
             <button class="pill" onclick="app.setClientFilter('paid', this)">✅ Al día</button>
           </div>
-        </div>
-
-        <div class="actions-row">
-          <button class="btn-primary" onclick="app.openModal('modal-add-client')">
-            <span>+ Inscribir Nuevo Miembro</span>
-          </button>
         </div>
 
         <div id="clients-list" class="list-container"></div>
@@ -446,7 +415,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Plan de Entrenamiento</label>
-            <select id="client-plan">
+            <select id="client-plan" onchange="app.checkCustomPlan(this.value)">
               <option value="Mensual Completo">Mensual Completo</option>
               <option value="Quincenal">Quincenal</option>
               <option value="Pase Libre VIP">Pase Libre VIP</option>
@@ -459,15 +428,28 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Fecha de Ingreso *</label>
-          <input type="date" id="client-start-date" required onchange="app.updatePayDayFromStartDate(this.value)">
-          <small class="text-muted" style="font-size:0.7rem; margin-top:2px;">Su día de cobro mensual se ajustará automáticamente según esta fecha (con ajuste para Feb/31).</small>
+        <div class="form-row">
+          <div class="form-group">
+            <label>¿Entrenamiento Personalizado?</label>
+            <select id="client-has-custom">
+              <option value="false">💪 No (Estándar)</option>
+              <option value="true">⭐ Sí (Personalizado)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fecha de Ingreso *</label>
+            <input type="date" id="client-start-date" required onchange="app.updatePayDayFromStartDate(this.value)">
+          </div>
         </div>
 
         <div class="form-group">
           <label>Monto Pendiente Inicial ($)</label>
           <input type="number" id="client-initial-debt" step="0.01" value="0.00" placeholder="0.00 si está al día">
+        </div>
+
+        <div class="form-group">
+          <label>Notas / Observaciones</label>
+          <input type="text" id="client-notes" placeholder="Ej: Rutina fuerza / Horario mañana / Detalle lesión">
         </div>
 
         <div class="modal-footer">
