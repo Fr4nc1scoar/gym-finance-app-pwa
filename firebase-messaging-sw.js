@@ -3,12 +3,12 @@ importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-comp
 
 // REPLACE WITH YOUR FIREBASE CONFIG
 firebase.initializeApp({
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_PROYECTO.firebaseapp.com",
-  projectId: "TU_PROYECTO",
-  storageBucket: "TU_PROYECTO.appspot.com",
-  messagingSenderId: "TU_SENDER_ID",
-  appId: "TU_APP_ID"
+  apiKey: "AIzaSyCP6xVzx2OxAS-Z2lFKyuosjocWEkBVmdc",
+  authDomain: "gym-finance-app.firebaseapp.com",
+  projectId: "gym-finance-app",
+  storageBucket: "gym-finance-app.firebasestorage.app",
+  messagingSenderId: "992657293811",
+  appId: "1:992657293811:web:2fa9adbbe64d075917d286"
 });
 
 const messaging = firebase.messaging();

@@ -27,13 +27,12 @@ class FitControlApp {
 
   init() {
     this.registerServiceWorker();
-    this.loadData();
+    this.initializeFirebase();
+    this.setupRealtimeSync();
     this.checkAuthStatus();
     this.setupEventListeners();
     this.setCurrentDate();
     this.applyTheme();
-    this.checkAndRenewCycles();
-    this.render();
     this.startNotificationScheduler();
   }
 
@@ -124,7 +123,7 @@ class FitControlApp {
     }
 
     if (changed) {
-      localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+      this.saveData();
     }
   }
 
@@ -415,8 +414,74 @@ class FitControlApp {
     this.checkAndRenewCycles();
   }
 
+  initializeFirebase() {
+    // Configura aquí las credenciales reales de tu consola Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCP6xVzx2OxAS-Z2lFKyuosjocWEkBVmdc",
+      authDomain: "gym-finance-app.firebaseapp.com",
+      projectId: "gym-finance-app",
+      storageBucket: "gym-finance-app.firebasestorage.app",
+      messagingSenderId: "992657293811",
+      appId: "1:992657293811:web:2fa9adbbe64d075917d286",
+      measurementId: "G-LSWTPMVZ8"
+    };
+
+    if (firebase.apps.length === 0) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    
+    this.db = firebase.firestore();
+
+    // Habilitar persistencia offline para acceso sin conexión
+    this.db.enablePersistence().catch((err) => {
+      console.warn("La persistencia offline no se pudo activar:", err.code);
+    });
+  }
+
+  setupRealtimeSync() {
+    this.db.collection("gyms").doc("the_family_gym")
+      .onSnapshot((doc) => {
+        if (doc.exists) {
+          console.log("Datos sincronizados desde la nube.");
+          this.data = doc.data();
+          
+          if (!this.data.clients) this.data.clients = [];
+          if (!this.data.loans) this.data.loans = [];
+          if (!this.data.customAlerts) this.data.customAlerts = [];
+          if (!this.data.cashflow) this.data.cashflow = [];
+          if (!this.data.settings) this.data.settings = {};
+
+          this.checkAndRenewCycles();
+          this.render();
+        } else {
+          // Migración segura: si hay datos en LocalStorage, los subimos a Firestore
+          const saved = localStorage.getItem(this.storageKey);
+          if (saved) {
+            try {
+              this.data = JSON.parse(saved);
+              console.log("Migrando datos locales a Firestore por primera vez...");
+            } catch (e) {
+              this.loadEmptyData();
+            }
+          } else {
+            this.loadEmptyData();
+          }
+          this.saveData();
+        }
+      }, (error) => {
+        console.error("Error en sincronización en tiempo real:", error);
+        this.loadData();
+        this.render();
+      });
+  }
+
   saveData() {
     localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+    if (this.db) {
+      this.db.collection("gyms").doc("the_family_gym").set(this.data)
+        .then(() => console.log("Datos sincronizados en la nube."))
+        .catch(err => console.error("Error al guardar en la nube:", err));
+    }
     this.render();
   }
 
