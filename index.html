@@ -454,8 +454,11 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Fecha de Ingreso *</label>
+            <label>Próximo Vencimiento / Pago *</label>
             <input type="date" id="client-start-date" required onchange="app.updatePayDayFromStartDate(this.value)">
+            <small style="display: block; margin-top: 4px; color: var(--text-muted); font-size: 0.75rem; line-height: 1.2;">
+              Si ya pagó este mes, pon la fecha de su próximo pago (en el futuro). Si debe hoy, coloca la fecha de hoy o del pasado.
+            </small>
           </div>
         </div>
 
