@@ -89,10 +89,16 @@ class FitControlApp {
 
     if (this.data.clients && this.data.clients.length > 0) {
       this.data.clients.forEach(client => {
-        if (client.status === 'paid' && client.amountOwed === 0 && client.startDate) {
-          if (todayStr >= client.startDate) {
-            client.amountOwed = Number(client.fee) || 25;
+        if (client.startDate) {
+          // Inicializar campos por si acaso
+          if (client.amountOwed === undefined) client.amountOwed = 0;
+          if (!client.status) client.status = 'paid';
+
+          // Acumular mensualidad y avanzar fecha por cada ciclo vencido
+          while (todayStr >= client.startDate) {
+            client.amountOwed = (Number(client.amountOwed) || 0) + (Number(client.fee) || 25);
             client.status = 'overdue';
+            client.startDate = this.advanceClientDueDate(client.startDate, client.plan);
             changed = true;
           }
         }
@@ -1165,23 +1171,44 @@ class FitControlApp {
 
     const client = this.data.clients.find(c => c.id === clientId);
     if (client) {
-      if (client.amountOwed > 0) {
-        client.amountOwed = Math.max(0, client.amountOwed - amount);
-        if (client.amountOwed === 0) {
+      const oldOwed = Number(client.amountOwed) || 0;
+      let paymentLeft = amount;
+
+      if (oldOwed > 0) {
+        if (paymentLeft >= oldOwed) {
+          paymentLeft -= oldOwed;
+          client.amountOwed = 0;
           client.status = 'paid';
-          client.startDate = this.advanceClientDueDate(client.startDate, client.plan);
         } else {
+          client.amountOwed = oldOwed - paymentLeft;
+          paymentLeft = 0;
           client.status = 'overdue';
         }
       } else {
-        if (amount >= client.fee) {
+        // Si no debía nada pero está pagando por adelantado o una mensualidad nueva
+        const fee = Number(client.fee) || 25;
+        if (paymentLeft >= fee) {
           client.amountOwed = 0;
           client.status = 'paid';
           client.startDate = this.advanceClientDueDate(client.startDate, client.plan);
+          paymentLeft -= fee;
         } else {
-          client.amountOwed = Math.max(0, client.fee - amount);
+          client.amountOwed = fee - paymentLeft;
+          paymentLeft = 0;
           client.status = 'overdue';
         }
+      }
+
+      // Si aún queda saldo a favor (pago de múltiples meses por adelantado)
+      const fee = Number(client.fee) || 25;
+      while (paymentLeft >= fee && fee > 0) {
+        client.startDate = this.advanceClientDueDate(client.startDate, client.plan);
+        paymentLeft -= fee;
+      }
+
+      // Si queda una fracción sobrante menor a una mensualidad, la restamos de su próxima deuda
+      if (paymentLeft > 0) {
+        client.amountOwed = Math.max(0, (client.amountOwed || 0) - paymentLeft);
       }
 
       this.data.cashflow.push({
