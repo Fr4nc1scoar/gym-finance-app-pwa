@@ -46,6 +46,35 @@ class FitControlApp {
     }
   }
 
+  retreatClientDueDate(dateStr, plan = '') {
+    if (!dateStr) return new Date().toISOString().split('T')[0];
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    let year = parseInt(parts[0], 10);
+    let month = parseInt(parts[1], 10) - 1;
+    let day = parseInt(parts[2], 10);
+
+    const planLower = (plan || '').toLowerCase();
+    if (planLower.includes('semanal') && !planLower.includes('quincenal')) {
+      const dObj = new Date(year, month, day - 7);
+      return dObj.toISOString().split('T')[0];
+    } else if (planLower.includes('quincenal')) {
+      const dObj = new Date(year, month, day - 15);
+      return dObj.toISOString().split('T')[0];
+    } else {
+      month -= 1;
+      if (month < 0) {
+        month = 11;
+        year -= 1;
+      }
+      const lastDayOfPrevMonth = new Date(year, month + 1, 0).getDate();
+      const actualDay = Math.min(day, lastDayOfPrevMonth);
+      const mStr = String(month + 1).padStart(2, '0');
+      const dStr = String(actualDay).padStart(2, '0');
+      return `${year}-${mStr}-${dStr}`;
+    }
+  }
+
   advanceClientDueDate(dateStr, plan = '') {
     if (!dateStr) return new Date().toISOString().split('T')[0];
     const parts = dateStr.split('-');
@@ -1010,9 +1039,26 @@ class FitControlApp {
     const dueDateFormatted = this.formatDateSpanish(client.startDate);
 
     const isOverdue = client.amountOwed > 0 || client.status === 'overdue';
-    const statusBadge = isOverdue
-      ? `<span class="badge badge-overdue">Debe $${Number(client.amountOwed).toFixed(2)} (Venció: ${dueDateFormatted})</span>`
-      : `<span class="badge badge-paid">Al día (Próximo pago: ${dueDateFormatted})</span>`;
+    
+    let statusBadge = '';
+    if (isOverdue) {
+       const fee = Number(client.fee) || 25;
+       const owed = Number(client.amountOwed);
+       const cycles = fee > 0 ? Math.ceil(owed / fee) : 1;
+       let oldestDate = client.startDate;
+       for(let i=0; i<cycles; i++) {
+           oldestDate = this.retreatClientDueDate(oldestDate, client.plan);
+       }
+       const formattedOldest = this.formatDateSpanish(oldestDate);
+
+       if (cycles > 1) {
+           statusBadge = `<span class="badge badge-overdue">Debe $${owed.toFixed(2)} (Venció desde: ${formattedOldest})</span>`;
+       } else {
+           statusBadge = `<span class="badge badge-overdue">Debe $${owed.toFixed(2)} (Venció: ${formattedOldest})</span>`;
+       }
+    } else {
+       statusBadge = `<span class="badge badge-paid">Al día</span>`;
+    }
 
     const trainerBadge = client.hasCustomTrainer
       ? `<span class="badge badge-custom">🏋️ Personalizado</span>`
@@ -1034,7 +1080,7 @@ class FitControlApp {
               <span class="item-title">${this.escapeHtml(client.name)}</span>
               ${trainerBadge}
             </div>
-            <span class="item-sub">Plan: ${client.plan} | Cobra el ${dueDateFormatted}</span>
+            <span class="item-sub">Plan: ${client.plan} | Próx. cobro: ${dueDateFormatted}</span>
             ${client.notes ? `<span class="item-sub" style="color:var(--brand-yellow); font-style:italic;">📝 ${this.escapeHtml(client.notes)}</span>` : ''}
             <div style="margin-top: 4px;">${statusBadge}</div>
           </div>
@@ -1196,6 +1242,7 @@ class FitControlApp {
           client.amountOwed = fee - paymentLeft;
           paymentLeft = 0;
           client.status = 'overdue';
+          client.startDate = this.advanceClientDueDate(client.startDate, client.plan);
         }
       }
 
