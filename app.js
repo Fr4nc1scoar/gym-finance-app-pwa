@@ -676,11 +676,11 @@ class FitControlApp {
     this.render();
   }
 
-  openModal(modalId) {
+  openModal(modalId, isEdit = false) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
 
-    if (modalId === 'modal-add-client') {
+    if (modalId === 'modal-add-client' && !isEdit) {
       document.getElementById('edit-client-id').value = '';
       document.getElementById('modal-client-title').textContent = '🏋️ Inscribir Nuevo Miembro';
       document.getElementById('btn-save-client').textContent = 'Guardar Miembro';
@@ -1119,7 +1119,7 @@ class FitControlApp {
     document.getElementById('modal-client-title').textContent = '✏️ Editar Miembro';
     document.getElementById('btn-save-client').textContent = 'Guardar Cambios';
 
-    this.openModal('modal-add-client');
+    this.openModal('modal-add-client', true);
   }
 
   deleteClient(clientId) {
@@ -1440,8 +1440,9 @@ class FitControlApp {
               <span class="item-sub">${item.category} | ${new Date(item.date).toLocaleDateString('es-ES')}</span>
             </div>
           </div>
-          <div class="item-side">
+          <div class="item-side" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
             <span class="item-amount ${colorClass}">${symbol}$${Number(item.amount).toFixed(2)}</span>
+            <button class="btn-icon-sm" style="color:var(--accent-red);" onclick="app.deleteCashflow('${item.id}')">🗑️</button>
           </div>
         </div>
       `;
@@ -1491,6 +1492,14 @@ class FitControlApp {
     this.closeModal('modal-add-income');
     document.getElementById('form-add-income').reset();
     this.showToast(`💰 Ingreso extra de $${amount.toFixed(2)} registrado.`);
+  }
+
+  deleteCashflow(cashflowId) {
+    if (confirm('¿Estás seguro de eliminar este movimiento de caja?')) {
+      this.data.cashflow = this.data.cashflow.filter(c => c.id !== cashflowId);
+      this.saveData();
+      this.showToast('🗑️ Movimiento de caja eliminado.');
+    }
   }
 
   saveSettings() {
