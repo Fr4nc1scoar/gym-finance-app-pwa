@@ -81,10 +81,13 @@
       <section id="view-dashboard" class="view-section active">
         
         <!-- BIENVENIDA Y FECHA -->
-        <div class="welcome-card">
+        <div class="welcome-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
           <div>
-            <span class="greeting-sub">THE FAMILY GYM • RESUMEN DE HOY</span>
-            <h2 class="greeting-title" id="current-date-str">Cargando fecha...</h2>
+            <span class="greeting-sub">THE FAMILY GYM • RESUMEN MENSUAL</span>
+            <h2 class="greeting-title" id="current-date-str" style="text-transform: capitalize;">Cargando...</h2>
+          </div>
+          <div>
+            <input type="month" id="dashboard-month-selector" onchange="app.changeDashboardMonth(this.value)" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: var(--brand-yellow); padding: 8px 12px; border-radius: 8px; font-family: inherit; font-weight: bold; cursor: pointer; outline: none;">
           </div>
         </div>
 
@@ -94,7 +97,7 @@
           <!-- KPI 1: Estimado a Cobrar Este Mes -->
           <div class="kpi-card yellow-gradient" onclick="app.switchTab('clients')">
             <div class="kpi-header">
-              <span class="kpi-label">ESTIMADO A COBRAR (ESTE MES)</span>
+              <span class="kpi-label">ESTIMADO A COBRAR (MES SELECCIONADO)</span>
               <div class="kpi-icon-badge">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
               </div>
@@ -106,7 +109,7 @@
           <!-- KPI 2: Estimado a Pagar (Gastos + Intereses) -->
           <div class="kpi-card red-gradient" onclick="app.switchTab('loans')">
             <div class="kpi-header">
-              <span class="kpi-label">ESTIMADO A PAGAR (ESTE MES)</span>
+              <span class="kpi-label">ESTIMADO A PAGAR (MES SELECCIONADO)</span>
               <div class="kpi-icon-badge">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
               </div>

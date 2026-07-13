@@ -22,6 +22,11 @@ class FitControlApp {
 
     this.activeTab = 'dashboard';
     this.clientStatusFilter = 'all';
+    
+    const now = new Date();
+    this.dashboardMonth = now.getMonth();
+    this.dashboardYear = now.getFullYear();
+
     this.init();
   }
 
@@ -675,10 +680,33 @@ class FitControlApp {
     });
   }
 
+  changeDashboardMonth(val) {
+    if (!val) return;
+    const parts = val.split('-');
+    this.dashboardYear = parseInt(parts[0], 10);
+    this.dashboardMonth = parseInt(parts[1], 10) - 1;
+    this.updateDashboardTitle();
+    this.render();
+  }
+
+  updateDashboardTitle() {
+    const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const title = `${monthNames[this.dashboardMonth]} ${this.dashboardYear}`;
+    const dateEl = document.getElementById('current-date-str');
+    if (dateEl) {
+      dateEl.textContent = title;
+    }
+  }
+
   setCurrentDate() {
-    const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-    const dateStr = new Date().toLocaleDateString('es-ES', options);
-    document.getElementById('current-date-str').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    const monthSelector = document.getElementById('dashboard-month-selector');
+    if (monthSelector) {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        monthSelector.value = `${y}-${m}`;
+    }
+    this.updateDashboardTitle();
   }
 
   switchTab(tabName) {
@@ -815,9 +843,11 @@ class FitControlApp {
   calculateKPIs() {
     const activeMembersCount = this.data.clients.length;
 
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const currentMonth = this.dashboardMonth !== undefined ? this.dashboardMonth : new Date().getMonth();
+    const currentYear = this.dashboardYear !== undefined ? this.dashboardYear : new Date().getFullYear();
+
+    const realNow = new Date();
+    const isCurrentMonth = (currentYear === realNow.getFullYear() && currentMonth === realNow.getMonth());
 
     const thisMonthCashflow = (this.data.cashflow || []).filter(m => {
       const d = new Date(m.date);
@@ -837,7 +867,8 @@ class FitControlApp {
 
     (this.data.clients || []).forEach(c => {
       const owed = Number(c.amountOwed) || 0;
-      if (owed > 0 || c.status === 'overdue') {
+      
+      if (isCurrentMonth && (owed > 0 || c.status === 'overdue')) {
         pendingToCollect += owed;
         overdueMembersCount++;
       } else {
