@@ -849,6 +849,9 @@ class FitControlApp {
     const realNow = new Date();
     const isCurrentMonth = (currentYear === realNow.getFullYear() && currentMonth === realNow.getMonth());
 
+    // El estimado a cobrar SIEMPRE es el potencial mensual del gimnasio (suma de todas las cuotas base)
+    const estimatedToCollect = this.data.clients.reduce((sum, c) => sum + (Number(c.fee) || 0), 0);
+
     const thisMonthCashflow = (this.data.cashflow || []).filter(m => {
       const d = new Date(m.date);
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
@@ -862,30 +865,12 @@ class FitControlApp {
       .filter(m => m.type === 'expense')
       .reduce((sum, m) => sum + Number(m.amount), 0);
 
-    let pendingToCollect = 0;
+    const pendingToCollect = Math.max(0, estimatedToCollect - realIncomeThisMonth);
+
     let overdueMembersCount = 0;
-
-    (this.data.clients || []).forEach(c => {
-      const owed = Number(c.amountOwed) || 0;
-      
-      if (isCurrentMonth && (owed > 0 || c.status === 'overdue')) {
-        pendingToCollect += owed;
-        overdueMembersCount++;
-      } else {
-        if (c.startDate) {
-          const parts = c.startDate.split('-');
-          if (parts.length === 3) {
-            const startYear = parseInt(parts[0], 10);
-            const startMonth = parseInt(parts[1], 10) - 1;
-            if (startYear === currentYear && startMonth === currentMonth) {
-              pendingToCollect += (Number(c.fee) || 0);
-            }
-          }
-        }
-      }
-    });
-
-    const estimatedToCollect = realIncomeThisMonth + pendingToCollect;
+    if (isCurrentMonth) {
+      overdueMembersCount = this.data.clients.filter(c => c.amountOwed > 0 || c.status === 'overdue').length;
+    }
 
     const monthlyLoanInterest = (this.data.loans || []).reduce((sum, l) => {
       const balance = Number(l.currentBalance) || 0;
