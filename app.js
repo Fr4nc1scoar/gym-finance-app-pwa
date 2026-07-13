@@ -814,30 +814,59 @@ class FitControlApp {
 
   calculateKPIs() {
     const activeMembersCount = this.data.clients.length;
-    const estimatedToCollect = this.data.clients.reduce((sum, c) => sum + (Number(c.fee) || 0), 0);
 
-    const realIncomeThisMonth = this.data.cashflow
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const thisMonthCashflow = (this.data.cashflow || []).filter(m => {
+      const d = new Date(m.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+
+    const realIncomeThisMonth = thisMonthCashflow
       .filter(m => m.type === 'income')
       .reduce((sum, m) => sum + Number(m.amount), 0);
 
-    const pendingToCollect = Math.max(0, estimatedToCollect - realIncomeThisMonth);
-    const overdueMembersCount = this.data.clients.filter(c => c.amountOwed > 0 || c.status === 'overdue').length;
+    const expensesThisMonth = thisMonthCashflow
+      .filter(m => m.type === 'expense')
+      .reduce((sum, m) => sum + Number(m.amount), 0);
 
-    const monthlyLoanInterest = this.data.loans.reduce((sum, l) => {
+    let pendingToCollect = 0;
+    let overdueMembersCount = 0;
+
+    (this.data.clients || []).forEach(c => {
+      const owed = Number(c.amountOwed) || 0;
+      if (owed > 0 || c.status === 'overdue') {
+        pendingToCollect += owed;
+        overdueMembersCount++;
+      } else {
+        if (c.startDate) {
+          const parts = c.startDate.split('-');
+          if (parts.length === 3) {
+            const startYear = parseInt(parts[0], 10);
+            const startMonth = parseInt(parts[1], 10) - 1;
+            if (startYear === currentYear && startMonth === currentMonth) {
+              pendingToCollect += (Number(c.fee) || 0);
+            }
+          }
+        }
+      }
+    });
+
+    const estimatedToCollect = realIncomeThisMonth + pendingToCollect;
+
+    const monthlyLoanInterest = (this.data.loans || []).reduce((sum, l) => {
       const balance = Number(l.currentBalance) || 0;
       const rate = Number(l.interestRate) || 0;
       return sum + (balance * (rate / 100));
     }, 0);
 
-    const expensesThisMonth = this.data.cashflow
-      .filter(m => m.type === 'expense')
-      .reduce((sum, m) => sum + Number(m.amount), 0);
-
     const estimatedToPay = expensesThisMonth + monthlyLoanInterest;
 
-    const totalOriginalDebts = this.data.loans.reduce((sum, l) => sum + (Number(l.originalPrincipal) || 0), 0);
-    const totalPaidDebts = this.data.loans.reduce((sum, l) => sum + (Number(l.totalPaid) || 0), 0);
-    const totalCurrentDebts = this.data.loans.reduce((sum, l) => sum + (Number(l.currentBalance) || 0), 0);
+    const totalOriginalDebts = (this.data.loans || []).reduce((sum, l) => sum + (Number(l.originalPrincipal) || 0), 0);
+    const totalPaidDebts = (this.data.loans || []).reduce((sum, l) => sum + (Number(l.totalPaid) || 0), 0);
+    const totalCurrentDebts = (this.data.loans || []).reduce((sum, l) => sum + (Number(l.currentBalance) || 0), 0);
 
     const overallLiquidatedPercent = totalOriginalDebts > 0 ? (totalPaidDebts / totalOriginalDebts) * 100 : 0;
 
@@ -1472,28 +1501,43 @@ class FitControlApp {
       return;
     }
 
-    container.innerHTML = [...cashflowToRender].reverse().map(item => {
-      const isIncome = item.type === 'income';
-      const symbol = isIncome ? '+' : '-';
-      const colorClass = isIncome ? 'text-success' : 'text-danger';
-      const icon = isIncome ? '🟢' : '🔴';
+    const grouped = {};
+    [...cashflowToRender].reverse().forEach(item => {
+      const d = new Date(item.date);
+      const monthYear = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+      const key = monthYear.charAt(0).toUpperCase() + monthYear.slice(1);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
+    });
 
-      return `
-        <div class="item-card">
-          <div class="item-main">
-            <div class="avatar-circle">${icon}</div>
-            <div class="item-info">
-              <span class="item-title">${this.escapeHtml(item.title)}</span>
-              <span class="item-sub">${item.category} | ${new Date(item.date).toLocaleDateString('es-ES')}</span>
+    let html = '';
+    for (const [monthYear, items] of Object.entries(grouped)) {
+      html += `<h4 style="margin: 16px 0 8px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">📅 ${monthYear}</h4>`;
+      html += items.map(item => {
+        const isIncome = item.type === 'income';
+        const symbol = isIncome ? '+' : '-';
+        const colorClass = isIncome ? 'text-success' : 'text-danger';
+        const icon = isIncome ? '🟢' : '🔴';
+
+        return `
+          <div class="item-card" style="margin-bottom: 8px;">
+            <div class="item-main">
+              <div class="avatar-circle">${icon}</div>
+              <div class="item-info">
+                <span class="item-title">${this.escapeHtml(item.title)}</span>
+                <span class="item-sub">${item.category} | ${new Date(item.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+              </div>
+            </div>
+            <div class="item-side" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+              <span class="item-amount ${colorClass}">${symbol}$${Number(item.amount).toFixed(2)}</span>
+              <button class="btn-icon-sm" style="color:var(--accent-red);" onclick="app.deleteCashflow('${item.id}')">🗑️</button>
             </div>
           </div>
-          <div class="item-side" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
-            <span class="item-amount ${colorClass}">${symbol}$${Number(item.amount).toFixed(2)}</span>
-            <button class="btn-icon-sm" style="color:var(--accent-red);" onclick="app.deleteCashflow('${item.id}')">🗑️</button>
-          </div>
-        </div>
-      `;
-    }).join('');
+        `;
+      }).join('');
+    }
+
+    container.innerHTML = html;
   }
 
   saveExpense(e) {
